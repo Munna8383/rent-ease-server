@@ -29,6 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const userCollection = client.db("rentEaseDB").collection("user")
+    const apartmentsCollection = client.db("rentEaseDB").collection("apartments")
 
     // save user in database
 
@@ -50,6 +51,21 @@ async function run() {
         res.send(result)
     })
 
+    // get all apartment data
+
+    app.get("/apartments",async(req,res)=>{
+
+        const result = await apartmentsCollection.find().toArray()
+        res.send(result)
+    })
+   
+    //count apartment for pagination
+
+    app.get("/apartmentCount",async(req,res)=>{
+
+        const count = await apartmentsCollection.estimatedDocumentCount()
+        res.send({count})
+    })
 
 
 
