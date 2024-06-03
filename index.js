@@ -31,6 +31,7 @@ async function run() {
     const userCollection = client.db("rentEaseDB").collection("user")
     const apartmentsCollection = client.db("rentEaseDB").collection("apartments")
     const announcementCollection = client.db("rentEaseDB").collection("announcements")
+    const couponCollection = client.db("rentEaseDB").collection("coupons")
 
     // save user in database
 
@@ -97,6 +98,27 @@ async function run() {
       const result = await announcementCollection.find().toArray()
       
       res.send(result)
+
+    })
+
+    // Add coupons by the admin
+
+    app.post("/addCoupons",async(req,res)=>{
+
+      const coupon = req.body
+
+      const result = await couponCollection.insertOne(coupon)
+      res.send(result)
+    })
+
+    // get all coupon code 
+
+    app.get("/coupons",async(req,res)=>{
+
+      const result = await couponCollection.find().toArray()
+
+      res.send(result)
+
 
     })
 
