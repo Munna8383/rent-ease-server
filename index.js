@@ -30,6 +30,7 @@ async function run() {
   try {
     const userCollection = client.db("rentEaseDB").collection("user")
     const apartmentsCollection = client.db("rentEaseDB").collection("apartments")
+    const announcementCollection = client.db("rentEaseDB").collection("announcements")
 
     // save user in database
 
@@ -68,6 +69,35 @@ async function run() {
 
         const count = await apartmentsCollection.estimatedDocumentCount()
         res.send({count})
+    })
+
+    // get user role
+
+    app.get("/user/:email",async(req,res)=>{
+      const email = req.params.email
+      const query = {email:email}
+      const result = await userCollection.findOne(query)
+      res.send(result)
+    })
+
+    // adding announcement by admin to database
+
+    app.post("/addAnnouncement",async(req,res)=>{
+
+      const announcement = req.body
+
+      const result = await announcementCollection.insertOne(announcement)
+      res.send(result)
+    })
+
+    // get all announcements
+
+    app.get("/announcements",async(req,res)=>{
+
+      const result = await announcementCollection.find().toArray()
+      
+      res.send(result)
+
     })
 
 
