@@ -2,6 +2,7 @@ const express = require("express")
 const app = express()
 const cors = require("cors")
 require("dotenv").config()
+const jwt = require("jsonwebtoken")
 const port = process.env.PORT || 5000
 
 
@@ -14,7 +15,7 @@ app.use(cors({
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.akl91ab.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -32,6 +33,43 @@ async function run() {
     const apartmentsCollection = client.db("rentEaseDB").collection("apartments")
     const announcementCollection = client.db("rentEaseDB").collection("announcements")
     const couponCollection = client.db("rentEaseDB").collection("coupons")
+    const agreementCollection = client.db("rentEaseDB").collection("agreements")
+
+
+    // jwt related api
+
+    app.post("/jwt",async(req,res)=>{
+      const user = req.body
+      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{
+        expiresIn:"1h"
+      })
+
+      res.send({token})
+    })
+
+    // middleware
+
+    const verifyToken =(req,res,next)=>{
+
+      if(!req.headers.authorization){
+        return res.status(401).send({message:"forbidden access"})
+      }
+
+      const token = req.headers.authorization.split(" ")[1]
+
+      jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
+
+        if(err){
+          return res.status(401).send({message:"forbidden access"})
+        }
+
+        req.decoded = decoded
+
+        next()
+
+      })
+
+    }
 
     // save user in database
 
@@ -53,9 +91,42 @@ async function run() {
         res.send(result)
     })
 
+    // get user role
+
+    app.get("/user/:email",async(req,res)=>{
+      const email = req.params.email
+      const query = {email:email}
+      const result = await userCollection.findOne(query)
+      res.send(result)
+    })
+
+    // get all users
+
+    app.get("/users",async(req,res)=>{
+
+      const result = await userCollection.find().toArray()
+      res.send(result)
+    })
+
+    // change user Role by the Admin
+
+    app.patch("/changeRole/:id",async(req,res)=>{
+      const id = req.params.id
+      console.log(id)
+      const query = {_id: new ObjectId(id)}
+      const updateDoc  = {
+        $set:{
+          role:"user"
+        }
+      }
+
+      const result = await userCollection.updateOne(query,updateDoc)
+      res.send(result)
+    })
+
     // get all apartment data
 
-    app.get("/apartments",async(req,res)=>{
+    app.get("/apartments",verifyToken,async(req,res)=>{
 
       const page =parseInt(req.query.page)
       const size =parseInt(req.query.size)
@@ -72,14 +143,7 @@ async function run() {
         res.send({count})
     })
 
-    // get user role
-
-    app.get("/user/:email",async(req,res)=>{
-      const email = req.params.email
-      const query = {email:email}
-      const result = await userCollection.findOne(query)
-      res.send(result)
-    })
+    
 
     // adding announcement by admin to database
 
@@ -118,6 +182,141 @@ async function run() {
       const result = await couponCollection.find().toArray()
 
       res.send(result)
+
+
+    })
+    // get single Coupon
+
+    app.get("/singleCoupon/:id",async(req,res)=>{
+      const id = req.params.id 
+      const query = {_id:new ObjectId(id)}
+      const result = await couponCollection.findOne(query)
+      res.send(result)
+    })
+
+    // change validity of coupons by user
+
+    app.patch("/coupon/:id",async(req,res)=>{
+
+      const changeDate = req.body
+
+      const id = req.params.id
+
+      console.log(changeDate)
+
+      const query = {_id:new ObjectId(id)}
+
+      const updateDoc = {
+        $set:{
+          validDate:changeDate.validDate
+        }
+      }
+
+      const result = await couponCollection.updateOne(query,updateDoc)
+
+      res.send(result)
+    
+
+      
+    })
+
+    // insert Agreement data by the user
+
+    app.post("/addAgreement",async(req,res)=>{
+
+      const data = req.body
+
+      const result = await agreementCollection.insertOne(data)
+
+      res.send(result)
+
+
+    })
+
+
+    // get individual agreement Apartment
+
+    app.get("/myApartment/:email",async(req,res)=>{
+
+      const email = req.params.email
+      const query = {email:email}
+
+      const result = await agreementCollection.findOne(query)
+      res.send(result)
+
+
+    })
+
+
+    // get all data for admin whose status is pending
+
+    app.get("/pendingApartment",async(req,res)=>{
+
+      const query = {status:"pending"}
+
+      const result = await agreementCollection.find(query).toArray()
+      res.send(result)
+    })
+
+
+    // accept the agreement by the admin
+
+    app.put("/acceptAgreement/:email",async(req,res)=>{
+      const accept = req.body
+      const email = req.params.email
+
+      const query = {email:email}
+      const option = {upsert:true} 
+      const updateDoc1 = {
+
+        $set:{
+
+          status:"checked",
+          acceptedDate:accept.validDate
+
+        }
+
+      }
+
+      const acceptedResult = await agreementCollection.updateOne(query,updateDoc1,option)
+
+      const updateDoc2 = {
+        $set:{
+          role:"member"
+        }
+      }
+
+      const updateUserRole = await userCollection.updateOne(query,updateDoc2)
+
+      res.send({acceptedResult,updateUserRole})
+
+
+      
+    })
+
+    // reject the agreement by the admin
+
+    app.put("/rejectAgreement/:email",async(req,res)=>{
+
+      const email = req.params.email
+
+      const query = {email:email}
+
+      const updateDoc= {
+
+        $set:{
+
+          status:"checked"
+
+        }
+
+
+      }
+
+      const result = await agreementCollection.updateOne(query,updateDoc)
+
+      res.send(result)
+
 
 
     })
