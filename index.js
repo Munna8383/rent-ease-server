@@ -322,6 +322,34 @@ async function run() {
     })
 
 
+    // payment month update by the member
+
+    app.put("/paymentMonth/:email",async(req,res)=>{
+
+      const email = req.params.email
+
+      const paymentMonth = req.body
+
+    const query = {email:email}
+
+    const option = {upsert:true}
+
+    const updateDoc={
+      $set:{
+        paymentMonth:paymentMonth.paymentMonth
+      }
+    }
+
+    const result = await agreementCollection.updateOne(query,updateDoc,option)
+
+    res.send(result)
+    
+
+
+
+    })
+
+
 
 
 
