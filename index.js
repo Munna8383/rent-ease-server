@@ -3,7 +3,10 @@ const app = express()
 const cors = require("cors")
 require("dotenv").config()
 const jwt = require("jsonwebtoken")
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000
+
+
 
 
 app.use(cors({
@@ -34,6 +37,7 @@ async function run() {
     const announcementCollection = client.db("rentEaseDB").collection("announcements")
     const couponCollection = client.db("rentEaseDB").collection("coupons")
     const agreementCollection = client.db("rentEaseDB").collection("agreements")
+    const paymentsCollection = client.db("rentEaseDB").collection("payments")
 
 
     // jwt related api
@@ -344,19 +348,65 @@ async function run() {
 
     res.send(result)
     
+    })
 
+
+    // payment related api
+
+    app.post("/create-payment-intent",async(req,res)=>{
+
+      const {price}= req.body
+
+      const amount = parseInt(price*100)
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount:amount,
+        currency:"usd",
+        payment_method_types:["card"]
+
+      })
+
+      res.send({clientSecret:paymentIntent.client_secret})
 
 
     })
 
 
+    // insert the payment of the member in the database
+
+    app.post("/updatePayment",async(req,res)=>{
+
+      const payment = req.body
+
+      const result = await paymentsCollection.insertOne(payment)
+
+      res.send(result)
+    })
+
+    // get the payment history of the member
 
 
+    app.get("/paymentHistory",async(req,res)=>{
+
+      const email = req.query.email
+      const searchText= req.query.search
 
 
+      const query = {email:email}
+
+      if (searchText) {
+        query.$or = [
+            { 
+              paymentMonth: { $regex: searchText, $options: 'i' } }
+        ];
+    }
+
+      const result = await paymentsCollection.find(query).toArray()
+
+      res.send(result)
 
 
-
+    })
 
 
     // Connect the client to the server	(optional starting in v4.7)
