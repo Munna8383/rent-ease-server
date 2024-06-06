@@ -408,6 +408,49 @@ async function run() {
 
     })
 
+    // get the discount for the user
+
+    app.get("/getDiscount",async(req,res)=>{
+
+      const code = req.query.code
+      const email = req.query.email
+
+      
+
+      if(code && email){
+
+        const query = {code:code}
+        const filter = {email:email}
+
+        const agreement = await agreementCollection.findOne(filter)
+
+      
+
+        const result = await couponCollection.findOne(query)
+
+        if(result && agreement){
+
+          const discount = parseInt((agreement.rent*result.percentage)/100)
+
+         if(discount){
+
+          res.send({discount})
+
+
+         }
+        }else{
+          res.send({message:"enter valid code"})
+
+
+        }
+
+
+
+      }
+
+
+    })
+
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
