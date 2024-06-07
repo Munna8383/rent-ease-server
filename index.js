@@ -439,6 +439,28 @@ async function run() {
 
     })
 
+
+    // get the data for admin profile
+
+
+    app.get("/adminProfile",async(req,res)=>{
+
+      const totalRoom = await apartmentsCollection.estimatedDocumentCount()
+
+      const availableRoom = await apartmentsCollection.countDocuments({status:"available"})
+    
+      const unavailableRoom = await apartmentsCollection.countDocuments({status:"unavailable"})
+   
+      const user = await userCollection.countDocuments({role:"user"})
+     
+      const member = await userCollection.countDocuments({role:"member"})
+     
+
+      res.send({totalRoom,availableRoom,unavailableRoom,user,member})
+
+
+    })
+
     // get the discount for the user
 
     app.get("/getDiscount",async(req,res)=>{
