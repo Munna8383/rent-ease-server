@@ -224,6 +224,19 @@ async function run() {
       
     })
 
+    // delete a coupon by the admin 
+
+    app.delete("/deleteCoupon/:id",async(req,res)=>{
+
+      const id = req.params.id
+
+      const query = {_id:new ObjectId(id)}
+
+      const result= await couponCollection.deleteOne(query)
+
+      res.send(result)
+    })
+
     // insert Agreement data by the user
 
     app.post("/addAgreement",async(req,res)=>{
