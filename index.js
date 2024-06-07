@@ -282,6 +282,7 @@ async function run() {
 
       }
 
+
       const acceptedResult = await agreementCollection.updateOne(query,updateDoc1,option)
 
       const updateDoc2 = {
@@ -292,7 +293,24 @@ async function run() {
 
       const updateUserRole = await userCollection.updateOne(query,updateDoc2)
 
-      res.send({acceptedResult,updateUserRole})
+
+      
+      const getData = await agreementCollection.findOne(query)
+
+      
+
+      const query3 = {apartment_no:getData.apartment}
+
+      const updateDoc3 = {
+        $set:{
+          status:"unavailable"
+        }
+      }
+
+      const roomStatus= await apartmentsCollection.updateOne(query3,updateDoc3)
+
+
+      res.send({acceptedResult,updateUserRole,roomStatus})
 
 
       
