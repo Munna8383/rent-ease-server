@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000
 
 
 app.use(cors({
-    origin:["http://localhost:5173"],
+    origin:["http://localhost:5173","https://rent-ease-2de9a.web.app"],
     credentials:true
   }))
   app.use(express.json())
@@ -506,9 +506,9 @@ async function run() {
 
 
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
